@@ -1,0 +1,11 @@
+{
+  "name": "azurhub-system",
+  "version": "1.0.0",
+  "description": "AI Web Generator System",
+  "main": "index.js",
+  "dependencies": {
+    "groq-sdk": "^0.3.3"
+  },
+  "author": "Tuan Loid",
+  "license": "ISC"
+}
