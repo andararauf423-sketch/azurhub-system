@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AzurHub Admin | Real-Time Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-gray-200 min-h-screen p-5">
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-center mb-10 border-b border-blue-900 pb-5">
+            <h1 class="text-3xl font-bold text-blue-500 tracking-tighter">AZURHUB <span class="text-white">ADMIN</span></h1>
+            <div id="status-db" class="text-xs bg-blue-900/30 text-blue-400 px-3 py-1 rounded-full border border-blue-500/50">
+                DATABASE CONNECTED
+            </div>
+        </header>
+
+        <div id="order-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div id="loading-state" class="col-span-full text-center py-20 text-gray-500">
+                Menunggu permintaan baru dari Firebase...
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCgn6BJJ8H4_JrudtgK__H1NNtV-eIAoO8",
+            authDomain: "azurhub-system.firebaseapp.com",
+            projectId: "azurhub-system",
+            storageBucket: "azurhub-system.firebasestorage.app",
+            messagingSenderId: "897658533775",
+            appId: "1:897658533775:web:17b04bcd1c068c33757dfa"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // REAL-TIME LISTENER: Pantau terus koleksi 'orders' yang statusnya 'pending'
+        const q = query(collection(db, "orders"), where("status", "==", "pending"));
+        
+        onSnapshot(q, (snapshot) => {
+            const container = document.getElementById('order-container');
+            if (snapshot.empty) {
+                container.innerHTML = '<div class="col-span-full text-center py-20 text-gray-600 border border-dashed border-gray-800 rounded-xl">Belum ada permintaan masuk. Santai dulu, Cok.</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const card = `
+                    <div class="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-xl hover:border-blue-500 transition-all duration-300">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-blue-400 font-bold text-lg">${data.nama_user}</h3>
+                            <span class="text-[10px] bg-yellow-900/50 text-yellow-500 px-2 py-0.5 rounded border border-yellow-700">PENDING</span>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-6 italic">"${data.request}"</p>
+                        <button onclick="approveOrder('${doc.id}', '${data.request}')" id="btn-${doc.id}" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                            APPROVE & RAKIT AI
+                        </button>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        });
+
+        // FUNGSI EKSEKUSI AI
+        window.approveOrder = async (orderId, promptUser) => {
+            const btn = document.getElementById(`btn-${orderId}`);
+            btn.disabled = true;
+            btn.innerHTML = 'SEDANG MERAKIT...';
+            btn.classList.replace('bg-blue-600', 'bg-gray-700');
+
+            try {
+                // Panggil Netlify Function 'generate'
+                const response = await fetch('/.netlify/functions/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: promptUser })
+                });
+
+                const result = await response.json();
+
+                if (result.html) {
+                    // Update Firebase: Masukin hasil HTML dan ganti status jadi DONE
+                    const orderRef = doc(db, "orders", orderId);
+                    await updateDoc(orderRef, {
+                        htmlContent: result.html,
+                        status: "done",
+                        completedAt: serverTimestamp()
+                    });
+                    alert("Gokil! AI Berhasil ngerakit kodenya.");
+                } else {
+                    throw new Error("AI Gagal ngasih respon.");
+                }
+            } catch (err) {
+                alert("Error: " + err.message);
+                btn.disabled = false;
+                btn.innerHTML = 'APPROVE & RAKIT AI';
+                btn.classList.replace('bg-gray-700', 'bg-blue-600');
+            }
+        };
+    </script>
+</body>
+</html>
+
