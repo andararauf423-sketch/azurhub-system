@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexlify - Daftar Website AI</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Nexlify</h1>
+            <p>Website Profesional Otomatis oleh AI</p>
+        </div>
+        <form id="registerForm">
+            <h2>Daftar Sekarang</h2>
+            <div class="input-group">
+                <label for="nama">Nama Bisnis / Website</label>
+                <input type="text" id="nama" placeholder="Contoh: Kafe Bahagia" required>
+            </div>
+            <div class="input-group">
+                <label for="deskripsi">Deskripsi Singkat</label>
+                <textarea id="deskripsi" rows="3" placeholder="Jelaskan bisnis kamu..." required></textarea>
+            </div>
+            <div class="input-group">
+                <label for="paket">Pilih Paket</label>
+                <select id="paket" required>
+                    <option value="">-- Pilih --</option>
+                    <option value="basic">📦 Basic – Rp30.000</option>
+                    <option value="pro">🚀 Pro – Rp20.000</option>
+                    <option value="premium">👑 Premium – Rp120.000</option>
+                </select>
+                <div class="paket-info" id="paketInfo"></div>
+            </div>
+            <div class="input-group">
+                <label for="username">Username Telegram (tanpa @)</label>
+                <input type="text" id="username" placeholder="contoh: johndoe" required>
+                <small>Pastikan sudah chat bot kami: <a href="https://t.me/NexlifyBot" target="_blank">@NexlifyBot</a></small>
+            </div>
+            <button type="submit">Daftar Sekarang</button>
+            <div id="status" class="status"></div>
+        </form>
+
+        <div class="package-details">
+            <h3>Detail Paket</h3>
+            <div class="package-card basic">
+                <h4>📦 Basic</h4>
+                <p class="price">Rp30.000 <span>/ 3 bulan</span></p>
+                <ul>
+                    <li>1 Website</li>
+                    <li>2x Edit / Minggu</li>
+                    <li>Desain AI Profesional</li>
+                </ul>
+            </div>
+            <div class="package-card pro">
+                <h4>🚀 Pro</h4>
+                <p class="price">Rp20.000 <span>/ bulan</span></p>
+                <ul>
+                    <li>3 Website</li>
+                    <li>9x Edit / Minggu</li>
+                    <li>Domain Netlify Gratis</li>
+                </ul>
+            </div>
+            <div class="package-card premium">
+                <h4>👑 Premium</h4>
+                <p class="price">Rp120.000 <span>/ tahun</span></p>
+                <ul>
+                    <li>5 Website</li>
+                    <li>12x Edit / Minggu</li>
+                    <li>Prioritas Generasi AI</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('registerForm');
+        const paketSelect = document.getElementById('paket');
+        const paketInfo = document.getElementById('paketInfo');
+        const statusDiv = document.getElementById('status');
+
+        const paketDetails = {
+            basic: 'Rp30.000 / 3 bulan | 1 website | 2 edit/minggu',
+            pro: 'Rp20.000 / bulan | 3 website | 9 edit/minggu',
+            premium: 'Rp120.000 / tahun | 5 website | 12 edit/minggu'
+        };
+        paketSelect.addEventListener('change', (e) => {
+            const val = e.target.value;
+            paketInfo.textContent = val ? paketDetails[val] : '';
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nama = document.getElementById('nama').value.trim();
+            const deskripsi = document.getElementById('deskripsi').value.trim();
+            const paket = paketSelect.value;
+            const username = document.getElementById('username').value.trim();
+
+            if (!nama || !deskripsi || !paket || !username) {
+                showStatus('❌ Semua field harus diisi.', 'error');
+                return;
+            }
+
+            showStatus('⏳ Mengirim pendaftaran...', 'loading');
+
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nama, deskripsi, paket, username })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showStatus('✅ Pendaftaran berhasil! Silakan buka Telegram dan lakukan pembayaran. Admin akan segera menghubungi.', 'success');
+                    form.reset();
+                    paketInfo.textContent = '';
+                } else {
+                    showStatus('❌ ' + (data.error || 'Gagal mendaftar.'), 'error');
+                }
+            } catch (err) {
+                showStatus('❌ Gagal terhubung ke server.', 'error');
+            }
+        });
+
+        function showStatus(msg, type) {
+            statusDiv.textContent = msg;
+            statusDiv.className = 'status ' + type;
+        }
+    </script>
+</body>
+    </html>
